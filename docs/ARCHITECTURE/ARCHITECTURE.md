@@ -1,53 +1,50 @@
 # Architecture Overview
-This Document serves to equip readers and the development team to understand the codebase of the project. Use this document to navigate the repository and contribute as needed. 
+This document equips readers and the development team to understand the codebase of the project. Use it to navigate the repository and contribute as needed.
 
 ## Project Structure
-[Project Root]/  
-├──  docs/                                #This contains the documentation produced during development.  
-│   ├──  ARCHITECTURE/                   #Contains this document and other documents on the structure of the project  
-│   ├──  BUILD INFO/                     #documentation detailing the build details  
-│    ├──  Presentation/                   #the presentations produced at the end of every week  
-│    ├──  Sprints/                        #the sprint plans produced at the beginning of every week  
-│   └──  Templates/                      #Contains the templates for the documentation   
-├──  examples/                            #Contains test Run programs for the SDK  
-├──  missions/                            #Contains preprogrammed instructions for drone movement  
-├──  runs/                                #Data produced for each run  
-│   ├── RunCommands/                     #Running logs for each run command  
-│   ├── RunTelemetry/                    # Telemetry data the drone produces for each run.  
-│   └── Startup.json/                    # Startup information for each run  
-├──  sdk/                                 #Contains the Python Client and scripts that interact with the simulation.   
-│   └── client/                          #Client scripts and libraries that connect to the sim and control the drone  
-│          ├── cpp                        #Airsim Client CPP files  
-│          ├── projectairsim              #Arisim python Libraries and build files  
-│          ├── Python                     #Example Scripts written by IAMAI  
-│          └── simConfig                  #Configuration files for the drone scripts  
-│    
-├── sim/                                  #Holds Unreal project files  
-│    ├──  Build/Windows                   #Contains the weekly build files  
-│    ├──  Config                          #Configuration files for unrela  
-│    ├──  Content                         #Models and ussets used in the Unreal simulation  
-│    ├──  Plugins                         #Plugins used, specifically the projectairsim project.  
-│    └──  CodroneSim.uproject             #Airism project  
-│── tests                                 #Holds tests missions  
-├── tools                                 #(Not used yet)  
-├── .gitattributes                        #Holds our git methods  
-├──  .gitignore                           #Details which files to ignore when we push  
-├──  README.md                            #Project description and credits  
-└── projectairsim_client.log             #Log of the commands and events that happened on the previous run  
-
-
+```
+[Project Root]/
+├── docs/                          # Documentation produced during development
+│   ├── ARCHITECTURE/              # Architecture documents (including this one)
+│   ├── BUILD INFO/                # Build details documentation
+│   ├── Presentation/              # Weekly presentations
+│   ├── Sprints/                   # Weekly sprint plans
+│   └── Templates/                 # Documentation templates
+├── examples/                      # Test run programs for the SDK
+├── missions/                      # Preprogrammed drone movement instructions
+├── runs/                          # Data produced for each run
+│   ├── RunCommands/               # Logs for each run command
+│   ├── RunTelemetry/              # Drone telemetry data for each run
+│   └── Startup.json               # Startup information for each run
+├── sdk/                           # Python client and simulation interaction scripts
+│   └── client/                    # Client scripts and libraries
+│       ├── cpp/                   # AirSim C++ client files
+│       ├── projectairsim/         # AirSim Python libraries and build files
+│       ├── Python/                # Example scripts (IAMAI)
+│       └── simConfig/             # Drone configuration files
+├── sim/                           # Unreal Engine project files
+│   ├── Build/Windows/             # Weekly build files
+│   ├── Config/                   # Unreal configuration files
+│   ├── Content/                  # Models and assets for the simulation
+│   ├── Plugins/                  # Plugins (including Project AirSim)
+│   └── CodroneSim.uproject       # Unreal project file
+├── tests/                        # Test missions
+├── tools/                        # (Not used yet)
+├── .gitattributes               # Git configuration
+├── .gitignore                   # Ignored files
+├── README.md                    # Project description and credits
+└── projectairsim_client.log     # Log from the previous run
+```
 
 ## Core Technologies
 
-The codrone airsim uses the following components
+The Codrone AirSim project uses the following components:
 
-##### Unreal Engine
+### Unreal Engine
+Acts as the main physics and graphics engine.
 
-This acts as our main physics and graphics engine.
+### Project AirSim
+Simulates the drone. Developed by IAMAI, it runs a server in Unreal and allows Python clients to connect and control the drone.
 
-##### Project Airsim
-
-This is how we simulate our drone. It was created by IAMAI to simulate vehicles in various game engines. It creates a server in Unreal and allows us to connect to it through Python and send commands to a simulated Drone.
-
-##### Python
-Python is our main scripting language. It communicates well with Project Airsims API's.
+### Python
+Primary scripting language used to interact with the Project AirSim API.
