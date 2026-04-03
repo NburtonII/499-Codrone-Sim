@@ -5,11 +5,34 @@ import re
 import json
 import asyncio
 import math
-from turtle import speed
 
 from projectairsim import ProjectAirSimClient, Drone, World
 from projectairsim import projectairsim_log
 from DroneSquare import fly_square
+from range_sensor import get_bottom_range, get_front_range
+
+
+DEFAULT_MAPS_CONFIG = {
+    "BasicArena": {
+        "scene_config": "sdk/client/sim_config/scene_basic_drone.jsonc"
+    }
+}
+
+COMMAND_COLUMNS = ["timestamp", "command", "duration_s", "status", "notes"]
+TELEMETRY_COLUMNS = [
+    "timestamp",
+    "x",
+    "y",
+    "z",
+    "w",
+    "orient_x",
+    "orient_y",
+    "orient_z",
+    "collision",
+    "front_range_cm",
+    "bottom_range_cm",
+]
+EVENT_COLUMNS = ["timestamp", "event_type", "details"]
 
 
 class UserControl:
@@ -18,6 +41,7 @@ class UserControl:
         self.CommandFilePath = None
         self.TelemetryFilePath = None
         self.EventsFilePath = None
+        self.RunFilePath = None
         ##Create the client that connects to the Airsim Host, the world ,and spawn drone object 
         self.client = ProjectAirSimClient() 
         self.runNumber = None
@@ -26,7 +50,7 @@ class UserControl:
         self.com_Pattern = "|".join(self.commandList)
         self.world = None
         self.drone = None 
-        self.Current_map =None
+        self.current_map = "BasicArena"
         self.maps_config = None
         self.latest_pose = None
         self.collision = False
@@ -41,7 +65,9 @@ class UserControl:
         try:
             self._load_maps_config()
             map_config = self._detect_map()
-            scene_file = map_config.get("scene_config")
+            scene_file = self._resolve_scene_config(
+                map_config.get("scene_config", DEFAULT_MAPS_CONFIG["BasicArena"]["scene_config"])
+            )
 
 
             setupFile = os.path.join(self.project_root, 'runs', 'Startup.json')
@@ -78,9 +104,11 @@ class UserControl:
 
             ##Get the current Run number (default to 0 if missing)
             self.runNumber = int(setUpInfo.get("RunNumber", 0))
+            self._ensure_run_directories()
             self.CommandFilePath = os.path.join(self.project_root, 'runs', 'RunCommands', f'Run_{self.runNumber}_Commands.csv')
             self.TelemetryFilePath = os.path.join(self.project_root, 'runs', 'RunTelemetry', f'Run_{self.runNumber}_Telemetry.csv')
             self.EventsFilePath = os.path.join(self.project_root, 'runs', 'RunEvents', f'Run_{self.runNumber}_Events.csv')
+            self.RunFilePath = os.path.join(self.project_root, 'runs', f'Run_{self.runNumber}_run.json')
 
             # Normalize the Startup.json to a single well-formed JSON object so future reads succeed
             try:
@@ -94,7 +122,9 @@ class UserControl:
         projectairsim_log().info(f"Connected to AirSim with run number: {self.runNumber}")    
         self.drone.enable_api_control()
         self.drone.arm()
+        self._ensure_log_headers()
         self._write_run_header()
+        self._write_run_metadata("connected")
 
     def _subscribe_drone_topics(self):
     ###Subscribe to pose and collision topics for the current drone object.
@@ -109,8 +139,29 @@ class UserControl:
 
     def _load_maps_config(self):
         maps_file = os.path.join(self.project_root, 'runs', 'maps_config.json')
+        if not os.path.exists(maps_file):
+            self.maps_config = DEFAULT_MAPS_CONFIG.copy()
+            return
         with open(maps_file, 'r') as f:
             self.maps_config = json.load(f)
+
+    def _resolve_scene_config(self, scene_config):
+        if os.path.isabs(scene_config):
+            return scene_config
+
+        candidates = [
+            os.path.join(self.project_root, scene_config),
+            os.path.join(self.project_root, "sdk", "client", "sim_config", scene_config),
+        ]
+        for candidate in candidates:
+            if os.path.exists(candidate):
+                return candidate
+        return candidates[0]
+
+    def _ensure_run_directories(self):
+        os.makedirs(os.path.join(self.project_root, "runs", "RunCommands"), exist_ok=True)
+        os.makedirs(os.path.join(self.project_root, "runs", "RunTelemetry"), exist_ok=True)
+        os.makedirs(os.path.join(self.project_root, "runs", "RunEvents"), exist_ok=True)
 
     
     def _detect_map(self):
@@ -132,30 +183,74 @@ class UserControl:
             self.current_map = "BasicArena"
             return self.maps_config["BasicArena"]
 
+    def _ensure_log_headers(self):
+        self._ensure_csv_header(self.CommandFilePath, COMMAND_COLUMNS)
+        self._ensure_csv_header(self.TelemetryFilePath, TELEMETRY_COLUMNS)
+        self._ensure_csv_header(self.EventsFilePath, EVENT_COLUMNS)
+
+    def _ensure_csv_header(self, path, columns):
+        if os.path.exists(path) and os.path.getsize(path) > 0:
+            return
+        with open(path, 'w', newline='') as f:
+            writer = csv.writer(f)
+            writer.writerow(columns)
 
     def _write_run_header(self):
-        """Write map info at top of command file for this run."""
-        with open(self.CommandFilePath, 'a') as f:
-            f.write(f"# Map: {self.current_map}, Run: {self.runNumber}\n")
+        """Persist run-start context without breaking the CSV command schema."""
+        self.save_Event("run_start", f"map:{self.current_map},run:{self.runNumber}")
+
+    def _write_run_metadata(self, status):
+        if not self.RunFilePath:
+            return
+
+        payload = {
+            "run_number": self.runNumber,
+            "status": status,
+            "map": self.current_map,
+            "commands_csv": os.path.relpath(self.CommandFilePath, self.project_root) if self.CommandFilePath else None,
+            "telemetry_csv": os.path.relpath(self.TelemetryFilePath, self.project_root) if self.TelemetryFilePath else None,
+            "events_csv": os.path.relpath(self.EventsFilePath, self.project_root) if self.EventsFilePath else None,
+            "metrics_json": f"runs/Run_{self.runNumber}_metrics.json" if self.runNumber is not None else None,
+        }
+        with open(self.RunFilePath, 'w') as f:
+            json.dump(payload, f, indent=2)
+
+    @staticmethod
+    def _range_to_cm(distance_m):
+        if distance_m is None:
+            return ""
+        return round(float(distance_m) * 100.0, 3)
 
     def save_Command(self, command, Duration, status="ok", notes=""):
         current_Date = time.asctime(time.localtime())
-        Command_message = f"{current_Date},{command},{Duration},{status},{notes}"
         ##This will save the command to the run file and close it after the command is saved
         ##Open Commadn file(Create if it doesnt exist)
         with open(self.CommandFilePath, 'a') as f:
-            f.write(Command_message + "\n")
+            writer = csv.writer(f)
+            writer.writerow([current_Date, command, Duration, status, notes])
     
     def save_Telemetry(self, telemetry_data):
         with open(self.TelemetryFilePath, 'a', newline='') as f:
-            f.write(f"{telemetry_data['timestamp']},{telemetry_data['position']['x']},{telemetry_data['position']['y']},{telemetry_data['position']['z']},"
-                    f"{telemetry_data['orientation']['w']},{telemetry_data['orientation']['x']},{telemetry_data['orientation']['y']},{telemetry_data['orientation']['z']},{self.collision}\n")
+            writer = csv.writer(f)
+            writer.writerow([
+                telemetry_data['timestamp'],
+                telemetry_data['position']['x'],
+                telemetry_data['position']['y'],
+                telemetry_data['position']['z'],
+                telemetry_data['orientation']['w'],
+                telemetry_data['orientation']['x'],
+                telemetry_data['orientation']['y'],
+                telemetry_data['orientation']['z'],
+                self.collision,
+                telemetry_data.get('front_range_cm', ""),
+                telemetry_data.get('bottom_range_cm', ""),
+            ])
     
     def save_Event(self, event_type, details=""):
         current_Date = time.asctime(time.localtime())
-        event_message = f"{current_Date},{event_type},{details}"
         with open(self.EventsFilePath, 'a') as f:
-            f.write(event_message + "\n")
+            writer = csv.writer(f)
+            writer.writerow([current_Date, event_type, details])
     
     def resetSimulator(self):
     ### Send a reset to the simulator by reloading the scene config.
@@ -392,6 +487,10 @@ class UserControl:
             if self.latest_pose is not None:
                 pos = self.latest_pose.get("position", {})
                 orientation = self.latest_pose.get("orientation", {})
+                front_range_m = await get_front_range(self, timeout_s=0.2)
+                bottom_range_m = await get_bottom_range(self, timeout_s=0.2)
+                front_range_cm = self._range_to_cm(front_range_m)
+                bottom_range_cm = self._range_to_cm(bottom_range_m)
                 z = pos.get("z", 0)
                 if z < self.Kill_z_up or z > self.kill_z_down:
                     projectairsim_log().warning(f"Drone has exceeded safe altitude limits (z={z:.3f}). Initiating emergency landing.")
@@ -410,12 +509,16 @@ class UserControl:
                     f"  Orientation -> W: {orientation.get('w', 0):.3f}, "
                     f"X: {orientation.get('x', 0):.3f}, "
                     f"Y: {orientation.get('y', 0):.3f}, "
-                    f"Z: {orientation.get('z', 0):.3f}"
+                    f"Z: {orientation.get('z', 0):.3f}\n"
+                    f"  Range -> Front: {front_range_cm if front_range_cm != '' else 'n/a'} cm, "
+                    f"Bottom: {bottom_range_cm if bottom_range_cm != '' else 'n/a'} cm"
             )
                 TelemetryData = {
                     "timestamp": time.asctime(time.localtime()),
                     "position": pos,
-                    "orientation": orientation
+                    "orientation": orientation,
+                    "front_range_cm": front_range_cm,
+                    "bottom_range_cm": bottom_range_cm,
                 }
                 self.save_Telemetry(TelemetryData)
             else:
@@ -494,6 +597,7 @@ class UserControl:
             pass
 
         finally:
+            self._write_run_metadata("closed")
             projectairsim_log().info("User Control Closed Successfully.")
             projectairsim_log().info(f"Run number {setUpInfo['RunNumber']} has been closed and saved to {self.CommandFilePath} and {self.TelemetryFilePath}. Thank you.")
 
@@ -516,5 +620,3 @@ class UserControl:
         ##Close CSV file
         ##Return list of dictionaries
         pass
-
-

@@ -1,19 +1,19 @@
-# examples/lab_square_path.py
+# examples/lab_01_first_flight.py
 #
-# Beginner square-path lab for the Week 7 alpha release.
+# Beginner lab for the Week 7 alpha release.
 #
 # Prerequisites:
 #   1. Start the Unreal simulator.
 #   2. When prompted for the map name, enter BasicArena.
 #   3. Activate your virtual environment.
 #   4. Run from the repo root:
-#        python3 examples/lab_square_path.py
+#        python3 examples/lab_01_first_flight.py
 #
 # Expected success output includes:
-#   LAB 2: Square Path
+#   LAB 1: First Flight
 #   success=True
 #   collisions=0
-#   LAB 2 PASS: Square Path completed.
+#   LAB 1 PASS: First Flight completed.
 
 import asyncio
 import os
@@ -26,7 +26,7 @@ from mission_runner import run_mission  # noqa: E402
 
 
 MISSION_FILE = os.path.join(
-    os.path.dirname(__file__), "..", "missions", "square_path.json"
+    os.path.dirname(__file__), "..", "missions", "first_flight.json"
 )
 
 
@@ -36,18 +36,17 @@ async def run_lab():
     controller.connect()
 
     try:
-        print("LAB 2: Square Path")
+        print("LAB 1: First Flight")
         print(f"Mission file: {mission_path}")
         metrics = await run_mission(mission_path, controller)
         print(f"success={metrics['success']}")
         print(f"completion_time_s={metrics['completion_time_s']}")
         print(f"collisions={metrics['collisions']}")
-        print(f"min_front_range_cm={metrics['min_front_range_cm']}")
         if metrics["failure_reason"]:
             print(f"failure_reason={metrics['failure_reason']}")
         if not metrics["success"]:
-            raise RuntimeError("Square Path mission failed.")
-        print("LAB 2 PASS: Square Path completed.")
+            raise RuntimeError("First Flight mission failed.")
+        print("LAB 1 PASS: First Flight completed.")
     finally:
         controller.close()
 
