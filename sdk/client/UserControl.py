@@ -5,6 +5,7 @@ import re
 import json
 import asyncio
 import math
+from turtle import speed
 
 from projectairsim import ProjectAirSimClient, Drone, World
 from projectairsim import projectairsim_log
@@ -16,6 +17,7 @@ class UserControl:
         self.project_root = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
         self.CommandFilePath = None
         self.TelemetryFilePath = None
+        self.EventsFilePath = None
         ##Create the client that connects to the Airsim Host, the world ,and spawn drone object 
         self.client = ProjectAirSimClient() 
         self.runNumber = None
@@ -78,6 +80,7 @@ class UserControl:
             self.runNumber = int(setUpInfo.get("RunNumber", 0))
             self.CommandFilePath = os.path.join(self.project_root, 'runs', 'RunCommands', f'Run_{self.runNumber}_Commands.csv')
             self.TelemetryFilePath = os.path.join(self.project_root, 'runs', 'RunTelemetry', f'Run_{self.runNumber}_Telemetry.csv')
+            self.EventsFilePath = os.path.join(self.project_root, 'runs', 'RunEvents', f'Run_{self.runNumber}_Events.csv')
 
             # Normalize the Startup.json to a single well-formed JSON object so future reads succeed
             try:
@@ -148,10 +151,17 @@ class UserControl:
             f.write(f"{telemetry_data['timestamp']},{telemetry_data['position']['x']},{telemetry_data['position']['y']},{telemetry_data['position']['z']},"
                     f"{telemetry_data['orientation']['w']},{telemetry_data['orientation']['x']},{telemetry_data['orientation']['y']},{telemetry_data['orientation']['z']},{self.collision}\n")
     
+    def save_Event(self, event_type, details=""):
+        current_Date = time.asctime(time.localtime())
+        event_message = f"{current_Date},{event_type},{details}"
+        with open(self.EventsFilePath, 'a') as f:
+            f.write(event_message + "\n")
+    
     def resetSimulator(self):
     ### Send a reset to the simulator by reloading the scene config.
     ###This is the protocol-level reset: the sim discards all object state
     ###and returns everything to its initial pose, equivalent to a fresh launch.
+    ### Sends /Sim/LoadScene protocol message to the simulator.
         projectairsim_log().info("resetSimulator: sending LoadScene request to simulator...")
 
         try:
@@ -215,6 +225,7 @@ class UserControl:
                     except Exception as e:
                         projectairsim_log().error(f"takeoff_async: FAILED — {e}")
                         self.save_Command(com, dur, status="failed", notes=str(e))
+                        self.save_Event("command_failure", f"takeoff:{str(e)}")
                         return
             elif com == "Land":
                 if not self.takeOff:
@@ -231,6 +242,7 @@ class UserControl:
                     except Exception as e:
                         projectairsim_log().error(f"land_async: FAILED — {e}")
                         self.save_Command(com, dur, status="failed", notes=str(e))
+                        self.save_Event("command_failure", f"land:{str(e)}")
                         return
         elif com == "State_Polling":
             projectairsim_log().info("State Polling: Started")
@@ -262,6 +274,7 @@ class UserControl:
                 except Exception as e:
                     projectairsim_log().error(f"{com}: FAILED — {e}")
                     self.save_Command(com, dur, status="failed", notes=str(e))
+                    self.save_Event("command_failure", f"{com}:{str(e)}")
                     return
         elif com in ["Forward", "Backward", "Left", "Right", "Up", "Down"]:
             if not self.takeOff:
@@ -317,6 +330,7 @@ class UserControl:
                 except Exception as e:
                     projectairsim_log().error(f"{com}: FAILED — {e}")
                     self.save_Command(com, dur, status="failed", notes=str(e))
+                    self.save_Event("command_failure", f"{com}:{str(e)}")
                     return
         elif com == "Square":
             if not self.takeOff:
@@ -341,6 +355,7 @@ class UserControl:
             return
         projectairsim_log().warning(f"Collision detected with object: {object_name} at position: {position}. Initiating emergency landing.")
         self.collision = True
+        self.save_Event("collision", f"object:{object_name},position:{position}")
        
         loop = asyncio.get_event_loop()
         loop.call_soon_threadsafe(
@@ -492,10 +507,10 @@ class UserControl:
         
         return None,None
         
-    ##Not sure if this function is neccsassaary
-    ##This entirely depends on if the Telemetry.csv file needs processing in the python Sdk
+    ##Not sure if this function is necessary
+    ##This entirely depends on if the Telemetry.csv file needs processing in the Python SDK
     def ReadCSV(self, filePath):
-        ##This will read the csv file and return the data in a list of dictionaries
+        ##This will read the CSV file and return the data in a list of dictionaries
         ##Open CSV file
         ##Read CSV file and convert to list of dictionaries
         ##Close CSV file
