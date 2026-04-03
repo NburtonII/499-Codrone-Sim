@@ -5,7 +5,7 @@
 2. Java
 3. Cmake
 
-I installed java form adoptium.
+I installed Java from Adoptium.
 
 
 ## Build the plugin
@@ -17,14 +17,14 @@ I installed java form adoptium.
 3. Run the build CMD with
 >[!NOTE]
 > $ build.cmd simlibs_release
-4.  Copy the Plug in to unreal project
+4.  Copy the plug-in to the Unreal project
 >[!NOTE]
 > robocopy "unreal\Blocks\Plugins\ProjectAirSim" "C:\path\to\CSDP_499_Codrone\sim\Plugins\ProjectAirSim" /E
 
 5. Regenerate VS Project files
     - go to Visual Studios 20xx
     - open project and right click "sim\CodroneSim.Uproject"
-    - select Regenrate VS project files amd select "Generate Visual Studio Project Files"
+    - select Regenerate VS project files and select "Generate Visual Studio Project Files."
 
 
-Project should open from unreal at this point. I will update this with eror fixes and solutoions as we run into them.
+The project should open in Unreal at this point. I will update this with error fixes and solutions as we run into them.
