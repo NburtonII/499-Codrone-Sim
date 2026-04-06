@@ -148,3 +148,14 @@ def _write_metrics(metrics, controller):
     )
     with open(metrics_path, "w") as f:
         json.dump(metrics, f, indent=2)
+
+
+def write_metrics(metrics, controller):
+    """
+    Public wrapper for writing metrics using the repo's existing run naming.
+
+    Args:
+        metrics (dict): Metrics payload to persist.
+        controller: Connected UserControl instance for resolving the run number.
+    """
+    _write_metrics(metrics, controller)

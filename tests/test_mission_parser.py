@@ -40,6 +40,12 @@ class TestMissionParser(unittest.TestCase):
             os.path.join(os.path.dirname(__file__), "..", "missions", "square_path.json")
         )
 
+    def _first_flight(self):
+        """Return the absolute path to missions/first_flight.json."""
+        return os.path.abspath(
+            os.path.join(os.path.dirname(__file__), "..", "missions", "first_flight.json")
+        )
+
     # ------------------------------------------------------------------
     # square_path.json baseline tests
     # ------------------------------------------------------------------
@@ -74,6 +80,26 @@ class TestMissionParser(unittest.TestCase):
             self.assertGreaterEqual(
                 step["duration"], 0, msg=f"Step {i} has negative duration"
             )
+
+    def test_square_path_has_four_legs_and_four_turns(self):
+        """square_path.json preserves the expected four-leg beginner mission."""
+        steps = load_mission(self._square_path())
+        commands = [step["command"] for step in steps]
+        self.assertEqual(commands.count("Forward"), 4)
+        self.assertEqual(commands.count("Yaw_Right"), 4)
+        self.assertEqual(commands[0], "Takeoff")
+        self.assertEqual(commands[-1], "Land")
+
+    def test_first_flight_loads(self):
+        """first_flight.json loads without error and returns a list."""
+        steps = load_mission(self._first_flight())
+        self.assertIsInstance(steps, list)
+
+    def test_first_flight_sequence_matches_beginner_lab(self):
+        """first_flight.json keeps the expected beginner command sequence."""
+        steps = load_mission(self._first_flight())
+        commands = [step["command"] for step in steps]
+        self.assertEqual(commands, ["Takeoff", "Forward", "State_Polling", "Land"])
 
     # ------------------------------------------------------------------
     # Validation error tests

@@ -64,6 +64,10 @@ class TestUnitConversion(unittest.TestCase):
 
 class TestThresholdCheck(unittest.TestCase):
 
+    def test_stop_before_wall_lab_threshold(self):
+        """The alpha lab stop threshold of 2.0 m should trigger a stop."""
+        self.assertTrue(is_within_threshold(2.0, 2.0))
+
     def test_below_threshold_triggers(self):
         self.assertTrue(is_within_threshold(1.5, 2.0))
 
