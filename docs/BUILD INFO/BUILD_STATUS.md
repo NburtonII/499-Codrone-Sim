@@ -4,7 +4,7 @@ This document is meant to give infomration on what machine and hardware the proj
 
 ## Golden Machine
 
-A goleden machine is the computer that this project was required to run on. at the end of everysprint or stories were not considered complete until it coudl run without unexpected issue on this machine. The specifiactions of the machine are as follows:
+A goleden machine is the computer that this project was required to run on. at the end of everysprint or stories were not considered complete until it coudl run without unexpected issue on this machine. The specifications of the machine are as follows:
 
 - Operating System: Windows 11
 - Processor: Intel(R) Xeon (R) w3-2435
@@ -17,11 +17,11 @@ We have to test what the minimum requirements for the project are but will try o
 
 ##  Set Up Instructions
 
-The following are steps to set up the airsim dependecies in the project.
+The following are steps to set up the AirSim dependencies in the project.
 
 ### Unreal
 
-these instructions assume a fresh install of everything.
+These instructions assume a fresh install of everything.
 
 1. Make sure you install the following:
 
@@ -57,9 +57,20 @@ cd PathtoClone/sdk/ProjectAirSim
 set VSCMD_ARG_TGT_ARCH=x64
 set VSCMD_ARG_HOST_ARCH=x64
 set UE_ROOT=C:\Program Files\Epic Games\UE_5.7
-build.cmd -Wno-dev simlib_release
+build.cmd -Wno-dev simlibs_release
 ```
-
+NOTE: if you run into "The system cannot find the path specified." error, you could likely do this:
+    Fix the vcvarsall.bat path in build.cmd
+    The script hardcoded the path to BuildTools flavor of VS 2022, which wasn't present. Change to the Community/Enterprise/Professional install path(whatever version of Visual Studio you have).
+    To make this edit, run ```bash notepad build.cmd ``` to edit the build.cmd and change "BuildTools" and remove "(x86)" in this line:
+    ```bash
+call "C:\Program Files (x86)\Microsoft Visual Studio\2022\BuildTools\VC\Auxiliary\Build\vcvarsall.bat" x64 -vcvars_ver=%MSVC_VER%
+    ```
+    to look like this(if using Community):
+    ```bash
+    call "C:\Program Files\Microsoft Visual Studio\2022\Community\VC\Auxiliary\Build\vcvarsall.bat" x64 -vcvars_ver=%MSVC_VER%
+    ```
+    
 5. Navigate to sdk\ProjectAirSim\unreal\Blocks. Run: blocks_genprojfiles_vscode.bat
 
   >[!Note]
