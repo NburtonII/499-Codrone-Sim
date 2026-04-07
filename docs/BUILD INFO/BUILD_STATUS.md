@@ -60,14 +60,14 @@ set UE_ROOT=C:\Program Files\Epic Games\UE_5.7
 build.cmd -Wno-dev simlibs_release
 ```
 NOTE: if you run into "The system cannot find the path specified." error, you could likely do this:
-    Fix the vcvarsall.bat path in build.cmd
-    The script hardcoded the path to BuildTools flavor of VS 2022, which wasn't present. Change to the Community/Enterprise/Professional install path(whatever version of Visual Studio you have).
-    To make this edit, run ```bash notepad build.cmd ``` to edit the build.cmd and change "BuildTools" and remove "(x86)" in this line:
-    ```bash
+    - Fix the vcvarsall.bat path in build.cmd
+        - The script hardcoded the path to BuildTools flavor of VS 2022, which wasn't present. Change to the Community/Enterprise/Professional install path(whatever version of Visual Studio you have).
+        - To make this edit, run ```bash notepad build.cmd ``` to edit the build.cmd and change "BuildTools" and remove "(x86)" in this line:
+        - ```bash
 call "C:\Program Files (x86)\Microsoft Visual Studio\2022\BuildTools\VC\Auxiliary\Build\vcvarsall.bat" x64 -vcvars_ver=%MSVC_VER%
     ```
-    to look like this(if using Community):
-    ```bash
+        - to look like this(if using Community):
+        - ```bash
     call "C:\Program Files\Microsoft Visual Studio\2022\Community\VC\Auxiliary\Build\vcvarsall.bat" x64 -vcvars_ver=%MSVC_VER%
     ```
     
