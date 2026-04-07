@@ -31,26 +31,26 @@ these instructions assume a fresh install of everything.
 
     - Visual Studio with 2022 build tools.
       - [Download](https://visualstudio.microsoft.com/vs/older-downloads/)
-      - Navigate to link above open the 2022 tab and click Download.
-      - Sign into to your Microsoft App.
-      - Downlaod the latest Build Tools for Visual Studio 2022
-      - Proced with Vs studio installer instructions.
-        - Make sure you include "MSVC v143 - VS 2022 C++ x64/x86 build tools"
+      - Navigate to the link above, open the 2022 tab, and click Download.
+      - Sign in to your Microsoft App.
+      - Download the latest Build Tools for Visual Studio 2022
+      - Proceed with VS Studio installer instructions.
+        - Make sure you include "MSVC v143 - VS 2022 C++ x64/x86 build tools (v14.39)"
 
-2. Navigate to your prefered Directory and clone the repo using:
+2. Navigate to your preferred Directory and clone the repo using:
 
 ```bash
     Git clone https://github.com/NburtonII/499-Codrone-Sim.git
 ```
 
-3. In addition you must clone the IAMAI's project airsim repo. you can clone it into the sdk directory of the project using:
+3. In addition, you must clone the IAMAI's project airsim repo. You can clone it into the sdk directory of the project using:
 
 ```bash
 cd <Directorylocation>/sdk
 git clone https://github.com/iamaisim/ProjectAirSim.git
 ```
 
-4. The simLibs from the airsim repo must be build do that by running the build.cmd. Open "x64 Nativ Tools Command Prompt for 2022". Navitgate to the projects directory and open  /sdk/projectairsim. Then run build.cmd in the command line.
+4. The simLibs from the airsim repo must be build do that by running the build.cmd. Open "x64 Nativ Tools Command Prompt for 2022". Navigate to the projects directory and open  /sdk/projectairsim. Then run build.cmd in the command line.
 
 ```bash
 cd PathtoClone/sdk/ProjectAirSim
@@ -63,14 +63,14 @@ build.cmd -Wno-dev simlib_release
 5. Navigate to sdk\ProjectAirSim\unreal\Blocks. Run: blocks_genprojfiles_vscode.bat
 
   >[!Note]
-  >Ensure that the UE_ROOT is set, running this will cause errors if it isnt.
+  >Ensure that the UE_ROOT is set. Running this will cause errors if it isn't.
 
 1. Once finished with the last step. Copy sdk/ProjectAirSim\unreal\Blocks\Plugins to the sim folder in the main directory. It is fine to replace the current plugins directory.
 
 2. Launch the unrela project in the sim directory. Click build when the unreal messages popsup. The system will be ready once finished.
 
 ### Python SDK
-1. Navigate to the python client directory
+1. Navigate to the Python client directory
   >>sdk\ProjectAirSim\client\python\projectairsim
 
 2. Now install python libraries using:
